@@ -1,0 +1,82 @@
+{
+  "version": "0.1.0",
+  "name": "smartcontract",
+  "instructions": [
+    {
+      "name": "createBill",
+      "accounts": [
+        {
+          "name": "bill",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "creator",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "name",
+          "type": "string"
+        },
+        {
+          "name": "totalAmount",
+          "type": "u64"
+        },
+        {
+          "name": "participants",
+          "type": {
+            "vec": "publicKey"
+          }
+        },
+        {
+          "name": "shares",
+          "type": {
+            "vec": "u64"
+          }
+        },
+        {
+          "name": "participantName",
+          "type": "string"
+        }
+      ]
+    }
+  ],
+  "accounts": [
+    {
+      "name": "Bill",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "creator",
+            "type": "publicKey"
+          },
+          {
+            "name": "name",
+            "type": "string"
+          },
+          {
+            "name": "totalAmount",
+            "type": "u64"
+          },
+          {
+            "name": "participantName",
+            "type": "string"
+          },
+          {
+            "name": "createdAt",
+            "type": "i64"
+          }
+        ]
+      }
+    }
+  ]
+} 
