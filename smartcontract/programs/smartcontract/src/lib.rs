@@ -16,7 +16,6 @@ pub mod smartcontract {
         participant_name: String,
     ) -> Result<()> {
         msg!("Creating bill with amount: {}", total_amount);
-        msg!("Creator balance: {}", ctx.accounts.creator.lamports());
 
         let bill = &mut ctx.accounts.bill;
         bill.creator = ctx.accounts.creator.key();
@@ -24,12 +23,22 @@ pub mod smartcontract {
         bill.total_amount = total_amount;
         bill.participant_name = participant_name;
         bill.created_at = Clock::get()?.unix_timestamp;
+        bill.is_paid = false;  // Initialize as unpaid
 
-        msg!("Transferring {} lamports to bill account", total_amount);
-        
-        // Transfer the payment from creator to the bill account
+        msg!("Bill created successfully");
+        Ok(())
+    }
+
+    pub fn pay_bill(ctx: Context<PayBill>) -> Result<()> {
+        msg!("Processing payment for bill");
+        msg!("Payer balance: {}", ctx.accounts.payer.lamports());
+
+        let bill = &mut ctx.accounts.bill;
+        require!(!bill.is_paid, BillError::AlreadyPaid);
+
+        // Transfer the payment
         let transfer_ix = system_program::Transfer {
-            from: ctx.accounts.creator.to_account_info(),
+            from: ctx.accounts.payer.to_account_info(),
             to: ctx.accounts.bill.to_account_info(),
         };
 
@@ -38,11 +47,26 @@ pub mod smartcontract {
             transfer_ix,
         );
 
-        system_program::transfer(cpi_context, total_amount)?;
+        system_program::transfer(cpi_context, bill.total_amount)?;
         
-        msg!("Transfer complete. New bill balance: {}", ctx.accounts.bill.to_account_info().lamports());
-        msg!("New creator balance: {}", ctx.accounts.creator.lamports());
+        bill.is_paid = true;
+        msg!("Payment complete. New bill balance: {}", ctx.accounts.bill.to_account_info().lamports());
+        msg!("New payer balance: {}", ctx.accounts.payer.lamports());
 
+        Ok(())
+    }
+
+    pub fn delete_bill(ctx: Context<DeleteBill>) -> Result<()> {
+        msg!("Deleting bill account");
+        
+        let bill_balance = ctx.accounts.bill.to_account_info().lamports();
+        msg!("Bill balance to reclaim: {}", bill_balance);
+
+        // Transfer the remaining lamports back to the creator
+        **ctx.accounts.bill.to_account_info().try_borrow_mut_lamports()? = 0;
+        **ctx.accounts.creator.try_borrow_mut_lamports()? += bill_balance;
+
+        msg!("Funds reclaimed. New creator balance: {}", ctx.accounts.creator.lamports());
         Ok(())
     }
 }
@@ -56,7 +80,6 @@ pub mod smartcontract {
     participant_name: String
 )]
 pub struct CreateBill<'info> {
-    /// CHECK: PDA account that will hold the bill data and SOL
     #[account(
         init,
         payer = creator,
@@ -66,10 +89,39 @@ pub struct CreateBill<'info> {
     )]
     pub bill: Account<'info, Bill>,
     
+    #[account(mut)]
+    pub creator: Signer<'info>,
+    
+    pub system_program: Program<'info, System>,
+}
+
+#[derive(Accounts)]
+pub struct PayBill<'info> {
     #[account(
         mut,
-        constraint = creator.lamports() >= total_amount @ BillError::InsufficientFunds
+        constraint = !bill.is_paid @ BillError::AlreadyPaid
     )]
+    pub bill: Account<'info, Bill>,
+    
+    #[account(
+        mut,
+        constraint = payer.lamports() >= bill.total_amount @ BillError::InsufficientFunds
+    )]
+    pub payer: Signer<'info>,
+    
+    pub system_program: Program<'info, System>,
+}
+
+#[derive(Accounts)]
+pub struct DeleteBill<'info> {
+    #[account(
+        mut,
+        close = creator,
+        constraint = bill.creator == creator.key() @ BillError::UnauthorizedDeletion
+    )]
+    pub bill: Account<'info, Bill>,
+    
+    #[account(mut)]
     pub creator: Signer<'info>,
     
     pub system_program: Program<'info, System>,
@@ -82,6 +134,7 @@ pub struct Bill {
     pub total_amount: u64,
     pub participant_name: String,
     pub created_at: i64,
+    pub is_paid: bool,  // New field to track payment status
 }
 
 impl Bill {
@@ -92,12 +145,17 @@ impl Bill {
         8 + // total_amount
         4 + participant_name.len() + // participant_name string
         8 + // created_at
+        1 + // is_paid boolean
         200 // padding for safety
     }
 }
 
 #[error_code]
 pub enum BillError {
-    #[msg("Insufficient funds for bill creation")]
+    #[msg("Insufficient funds for bill payment")]
     InsufficientFunds,
+    #[msg("Only the creator can delete this bill")]
+    UnauthorizedDeletion,
+    #[msg("This bill has already been paid")]
+    AlreadyPaid,
 }

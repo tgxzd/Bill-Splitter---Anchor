@@ -1,17 +1,25 @@
 export interface Bill {
-  address: string;
-  creator: string;
   name: string;
   totalAmount: number;
-  paidAmount: number;
-  participants: string[];
-  shares: number[];
-  payments: number[];
-  isSettled: boolean;
+  participantName: string;
+  createdAt: number;
+  isPending?: boolean;
+  address?: string;
+  creator?: string;
 }
 
-export interface Participant {
-  address: string;
-  share: number;
-  paid: number;
+export interface Achievement {
+  id: string;
+  title: string;
+  description: string;
+  icon: string;
+  requirement: number;
+  isUnlocked: boolean;
+}
+
+export interface UserProgress {
+  totalBillsPaid: number;
+  totalAmountPaid: number;
+  achievements: Achievement[];
+  lastUpdated: number;
 } 
