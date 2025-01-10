@@ -7,23 +7,10 @@ interface BillCardProps {
   participantName: string;
   date: Date;
   isPending?: boolean;
-  walletAddress?: string;
 }
 
-const BillCard: FC<BillCardProps> = ({ 
-  name, 
-  amount, 
-  participantName, 
-  date, 
-  isPending = false,
-  walletAddress
-}) => {
+const BillCard: FC<BillCardProps> = ({ name, amount, participantName, date, isPending = false }) => {
   const displayName = name.split('-').slice(0, -1).join('-') || name;
-
-  const shortenAddress = (address: string) => {
-    if (!address) return '';
-    return `${address.slice(0, 4)}...${address.slice(-4)}`;
-  };
 
   return (
     <div className={`
@@ -60,28 +47,6 @@ const BillCard: FC<BillCardProps> = ({
             <span className="text-gray-400">Participant</span>
             <span className="text-white font-medium">{participantName}</span>
           </div>
-
-          {/* Wallet Address */}
-          {walletAddress && (
-            <div className="flex items-center justify-between">
-              <span className="text-gray-400">Wallet</span>
-              <div className="flex items-center space-x-2">
-                <span className="text-gray-300 font-mono text-sm">
-                  {shortenAddress(walletAddress)}
-                </span>
-                <button
-                  onClick={() => navigator.clipboard.writeText(walletAddress)}
-                  className="text-blue-400 hover:text-blue-300 transition-colors"
-                  title="Copy address"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                    <path d="M8 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z" />
-                    <path d="M6 3a2 2 0 00-2 2v11a2 2 0 002 2h8a2 2 0 002-2V5a2 2 0 00-2-2 3 3 0 01-3 3H9a3 3 0 01-3-3z" />
-                  </svg>
-                </button>
-              </div>
-            </div>
-          )}
 
           {/* Date */}
           <div className="flex items-center justify-between">

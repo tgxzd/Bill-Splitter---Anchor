@@ -5,7 +5,6 @@ export interface Bill {
   createdAt: number;
   isPending?: boolean;
   address?: string;
-  creator?: string;
 }
 
 export interface Achievement {

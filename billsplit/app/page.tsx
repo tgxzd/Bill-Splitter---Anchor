@@ -17,7 +17,6 @@ interface PendingBill {
   totalAmount: number;
   participantName: string;
   createdAt: number;
-  walletAddress?: string;
 }
 
 export default function Home() {
@@ -124,21 +123,6 @@ export default function Home() {
     }
   };
 
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    const formData = new FormData(event.currentTarget);
-    
-    const newBill = {
-      name: formData.get('name') as string,
-      totalAmount: parseFloat(formData.get('amount') as string),
-      participantName: formData.get('participantName') as string,
-      createdAt: Date.now(),
-      walletAddress: publicKey?.toString()
-    };
-
-    // ... rest of submit handler ...
-  };
-
   return (
     <main className="min-h-screen bg-gradient-to-b from-[#0A1017] to-[#111827] text-white">
       {/* Header */}
@@ -209,7 +193,6 @@ export default function Home() {
                         participantName={bill.participantName}
                         date={new Date(bill.createdAt)}
                         isPending={true}
-                        walletAddress={bill.walletAddress}
                       />
                       <button
                         onClick={() => handlePayBill(bill)}
@@ -250,7 +233,9 @@ export default function Home() {
               </div>
               {bills.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {bills.map((bill) => (
+                  {bills
+                    .sort((a, b) => b.createdAt - a.createdAt)
+                    .map((bill) => (
                     <BillCard
                       key={bill.address}
                       name={bill.name}
@@ -258,7 +243,6 @@ export default function Home() {
                       participantName={bill.participantName}
                       date={new Date(bill.createdAt * 1000)}
                       isPending={false}
-                      walletAddress={bill.creator}
                     />
                   ))}
                 </div>
